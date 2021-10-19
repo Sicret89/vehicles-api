@@ -7,8 +7,6 @@ API https://vpic.nhtsa.dot.gov/api/
 
 # Endpoints:
 
-
-
 POST /cars/
 *e.g. {"make":"Volkswagen", "model":"Golf"}
 
@@ -24,7 +22,7 @@ POST /rate/
 DELETE /cars/{id}/
 *delete car with given id
 
-# Run project on local machine - project is dockerized with use of docer-compose.
+# Run project on local machine - use of docer-compose.
 
 To run project on Docker on local machine:
 
