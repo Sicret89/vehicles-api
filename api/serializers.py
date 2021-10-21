@@ -37,7 +37,6 @@ class CarSerializer(serializers.ModelSerializer):
         except AttributeError:
             return None
 
-
 class RateSerializer(serializers.ModelSerializer):
     car_id = serializers.PrimaryKeyRelatedField(
         queryset=Car.objects.all(),
