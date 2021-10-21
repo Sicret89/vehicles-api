@@ -1,12 +1,13 @@
-import logging
-
+import requests
 from django.db.models import Avg, Count
-from rest_framework import mixins, viewsets
+from requests.adapters import HTTPAdapter
+from rest_framework import mixins, status, viewsets
+from rest_framework.response import Response
+from urllib3.util.retry import Retry
 
 from api.models import Car, Rate
 from api.serializers import CarSerializer, RateSerializer
 
-logger = logging.getLogger(__name__)
 
 class CarViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = Car.objects.all()
@@ -18,6 +19,34 @@ class CarViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyM
         self.queryset = self.queryset.annotate(avg_rating=Avg("rates__rating"))
         self.queryset = self.queryset.annotate(rates_number=Count("rates__rating"))
         return self.queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        url = f'https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsformake/{data["make"]}?format=json'
+        s = requests.Session()
+        retries = Retry(
+            total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504]
+        )
+        s.mount("http://", HTTPAdapter(max_retries=retries))
+        response = s.get(url)
+        if response.status_code == 200:
+            response_data = response.json()["Results"]
+            models = [d["Model_Name"] for d in response_data]
+            if data["model"] in models:
+                self.perform_create(serializer)
+            else:
+                return Response(
+                    {"error": "Car make or model does not exist"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response({"error": "Connection failed"}, status=response.status_code)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
 class RateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = Rate.objects.all()

@@ -1,7 +1,7 @@
 # Vehicles Rest API
 You can: Add, rate, delete and view most rated cars.
 
-Available online: https://quiet-journey-47208.herokuapp.com/docs/
+Available online: http://quiet-journey-47208.herokuapp.com/docs/
 
 API https://vpic.nhtsa.dot.gov/api/
 
